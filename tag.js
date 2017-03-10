@@ -1,5 +1,5 @@
 #!/usr/bin/node
-const nodeID3v2 = require('node-id3v2.4');
+const nodeID3v2 = require('./index.js');
 const os = require('os');
 const fs = require('fs-extra');
 const exec = require('child_process').exec;
@@ -55,96 +55,14 @@ process.argv.forEach(function (e,i,a) {
         options[options.opa.shift()] = e;
       }
     }else{
+      if(e[0] == "-"){
+        console.log(`aaargh! '${e}' is unknown`);
+        return;
+      }
       options.filename = e;
     }
   }
   return;
-  switch(e){
-    case "-d":
-      options.debug = 1;
-      break;
-    case "-1":
-      options.testsingle = 1;
-      break;
-    case "-l":
-      options.list = 1;
-      break;
-    case "-ld":
-      options.list = 1;
-      options.dir = 1;
-      opa = ["directory"];
-      break;
-    case "-log":
-      options.log = 1;
-      break;
-    case "-c":
-      options.continue = 1;
-      break;
-    case "-u":
-      options.update = 1;
-      break;
-    case "-xp":
-      options.extractpictures = 1;
-      opa = ["pxpath"]
-      break;
-    case "-cp":
-      options.convertpictures = 1;
-      opa = ["pdest"]
-      break;
-    case "-fp":
-      options.fixpicture = 1;
-      break;
-    case "-tv3":
-      options.targetversion = 3;
-      break;
-    case "-tv4":
-      options.targetversion = 4;
-      break;
-    case "-bu":
-      options.backuptag = 1;
-      break;
-    case "-re":
-      options.restoretag = 1;
-      break;
-    case "-RT":
-      options.removetag = 1;
-      break;
-    case "-neo":
-      options.noencodingoverride = 1;
-    case "-te":
-      if(options.noencodingoverride){
-        console.log("can't use -te and -neo");
-        break;
-      }
-      opa = ["encoding"];
-      break;
-    case "-add":
-      opa = ["tagfile"];
-      options.addtag = 1;
-      break;
-    case "-af":
-      opa = ["addframes"];
-      opaa = 1;
-      options.addframe = 1;
-      break;
-    case "-RF":
-      opa = ["removeframes"];
-      opaa = 1;
-      options.removeframe = 1;
-      break;
-    default:
-      if(opa.length){
-        if(opaa){
-          let o = opa.shift();
-          options[o]?options[o].push(e):options[o]=[e];
-          opaa = 0;
-        }else{
-          options[opa.shift()] = e;
-        }
-      }else{
-        options.filename = e;
-      }
-  }
 });
 if(options.encoding && isNaN(options.encoding)){
   console.log("encoding: [0-3]");
