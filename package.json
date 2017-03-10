@@ -1,0 +1,23 @@
+{
+  "name": "node-id3v2.4",
+  "version": "0.0.1",
+  "description": "id3v2.4 tagger",
+  "main": "index.js",
+  "dependencies": {
+    "fs-extra": "^2.0.0",
+    "iconv-lite": "^0.4.15"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "id3",
+    "id3v2",
+    "id3v2.4",
+    "tag",
+    "mp3"
+  ],
+  "author": "Daniel Wienzek <dawi@online.de>",
+  "license": "MIT"
+}
