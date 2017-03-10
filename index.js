@@ -973,6 +973,8 @@ function ID3Tag(fb,options) { // fb = filebuffer
                   }
               }
           }
+          this.frames.splice(fi,1);  // no criteria - just delete
+          return;
       }
     }
     return { iserror: 1, type: -1, msg: `removeFrame: no frame of type '${t}' criteria '${a}' in tag`};
