@@ -4,7 +4,9 @@ const util = require('util');
 const zlib = require('zlib');
 const execSync = require('child_process').execSync;
 const os = require('os');
-
+const home = (process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE);
+const ndir = `${home}/.nodeID3v2/`;
+if(!fs.existsSync(ndir))fs.mkdirSync(ndir);
 module.exports = new NodeID3v2;
 // options
 const STRICTMODE = 1;
@@ -1069,11 +1071,11 @@ function ID3Tag(fb,options) { // fb = filebuffer
       fs.closeSync(fh);
     }
   }
-  ID3Tag.prototype.backupTag = () => {
+  ID3Tag.prototype.backupTag = (butagfile) => {
     if(this.tagok){
       debugger;
       let b = this.toBinary();
-      let r = fs.writeFileSync(this.filename.substring(0,this.filename.length-3)+"hbin",b);
+      let r = fs.writeFileSync((butagfile?butagfile+".":this.filename.substring(0,this.filename.length-3))+"hbin",b);
       return 1;
     }else{
       return 0;
@@ -1093,23 +1095,29 @@ function ID3Tag(fb,options) { // fb = filebuffer
     b = b.slice(this.buf.length);
     fs.writeFileSync(this.filename,b);
   }
-  ID3Tag.prototype.extractPictures = () => {
+  ID3Tag.prototype.extractPictures = (pxpath) => {
+    let fn;
     let i=0;
     for(f of this.frames){
       if(f.type == "APIC"){
-        fs.writeFileSync(this.filename.substring(0,this.filename.length-4)+"("+i.toString()+")."+f.data.mime.substring(6),f.data.picture);
+        pxpath?fn=pxpath+this.filename.match(/(.+\/)?(.+)\..+$/)[2]:fn=this.filename.match(/(.+)\..+$/)[1];
+        fn+=`(${i})[${f.data.picturetype}].${f.data.mime.substring(6)}`;
+        fs.writeFileSync(fn,f.data.picture);
         i++;
       }
     }
   }
   ID3Tag.prototype.convertPictures = function(dest){
+    dest = dest || "png";
     for(f of this.frames){
       if(f.type == "APIC"){
         debugger;
-        f.extractPicture("pic.tmp");
-        execSync(`convert pic.tmp pic.${dest}`);
-        f.data.picture = fs.readFileSync(`pic.${dest}`);
-        f.data.mime = "image/png";
+        f.extractPicture(`${ndir}pic.tmp`);
+        execSync(`convert ${ndir}pic.tmp ${ndir}pic.${dest}`);
+        f.data.picture = fs.readFileSync(`${ndir}pic.${dest}`);
+        fs.unlinkSync(`${ndir}pic.${dest}`);
+        fs.unlinkSync(`${ndir}pic.tmp`);
+        f.data.mime = `image/${dest}`;
       }
     }
   }
