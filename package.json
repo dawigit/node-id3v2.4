@@ -1,6 +1,6 @@
 {
   "name": "node-id3v2.4",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "id3v2.4 tagger",
   "main": "index.js",
   "dependencies": {
