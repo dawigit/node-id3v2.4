@@ -1,34 +1,38 @@
 ####node-id3v2.4
 
 ###node id3 tagger
+- read/write ID3v2.3 / ID3v2.4 tags
+- use/convert encodings 'ISO-8859-1','UTF-16',(ID3v2.4)'UTF-16BE','UTF-8'
+- add, convert (imagemagic) and extract images ('APIC')
+
 
 ##help:
 ```
-    node tag.js [-?|-h|--help]
+    node-id3tag [-?|-h|--help]
 ```
 ##list tag with:
 ```
-    node tag.js -l 'path/to/file.mp3'
+    node-id3tag -l 'path/to/file.mp3'
 ```
 ##add frame:
 ```
-    node tag.js -af artist,'the artists name' 'path/to/file.mp3'
+    node-id3tag -af artist,'the artists name' 'path/to/file.mp3'
 ```
 ##add frame and list tag:
 ```
-    node tag.js -l -af artist,'the artists name' 'path/to/file.mp3'
+    node-id3tag -l -af artist,'the artists name' 'path/to/file.mp3'
 ```
 ##tag is not writen until you add '-u' argument:
 ```
-    node tag.js -l -u -af TXXX,'my description','my text' 'path/to/file.mp3'
+    node-id3tag -l -u -af TXXX,'my description','my text' 'path/to/file.mp3'
 ```
 ##remove frame: (no 'friendly names' [use 'TIT2' instead of 'title'] for remove) (yet)
 ```
-    node tag.js -u -RF TIT2 'path/to/file.mp3'
+    node-id3tag -u -RF TIT2 'path/to/file.mp3'
 ```
 ##remove ambiguous frame with:
 ```
-    node tag.js -u -RF TXXX 'path/to/file.mp3'
+    node-id3tag -u -RF TXXX 'path/to/file.mp3'
 ```
 gives a message:
 ```
@@ -36,7 +40,7 @@ gives a message:
 ```
 so you have to:
 ```
-  node tag.js -u -RF TXXX,'my description' 'path/to/file.mp3'
+  node-id3tag -u -RF TXXX,'my description' 'path/to/file.mp3'
 ```
 
 ## importat:

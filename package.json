@@ -15,6 +15,9 @@
     "type": "git",
     "url": "git+https://github.com/dawigit/node-id3v2.4.git"
   },
+  "bin": {
+    "node-id3tag": "bin/tag.js"
+  },
   "keywords": [
     "id3",
     "id3v2",

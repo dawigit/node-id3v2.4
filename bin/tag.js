@@ -1,5 +1,5 @@
 #!/usr/bin/node
-const nodeID3v2 = require('./index.js');
+const nodeID3v2 = require('node-id3v2.4');
 const os = require('os');
 const fs = require('fs-extra');
 const exec = require('child_process').exec;
@@ -49,10 +49,10 @@ function help(){
   for(i of Object.keys(aaargh)){
     console.log(`${(" "+i+"     ").substring(0,6)}: ${aaargh[i][0]}`);
   }
-  console.log("Bug reports to: 'dawi@online.de'");
+  console.log(`${os.EOL}Bug reports to: 'dawi@online.de'`);
 }
 function usage(){
-  console.log("usage: tag.js < -switch [argument]|<argument> ... > ... 'mediafilename'")
+  console.log(`${os.EOL}usage: tag.js <-switch [argument]|<argument>...>... 'mediafilename'`)
 }
 if(process.argv.length == 2){
   help();
