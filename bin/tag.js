@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#! /usr/bin/env node
 const nodeID3v2 = require('node-id3v2.4');
 const os = require('os');
 const fs = require('fs-extra');

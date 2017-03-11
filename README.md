@@ -43,7 +43,7 @@ so you have to:
   node-id3tag -u -RF TXXX,'my description' 'path/to/file.mp3'
 ```
 
-## importat:
+## notes:
 
 This software has 'alpha' status - send bug reports!
 There are many media files in the wild with malformed tags or frames, which
