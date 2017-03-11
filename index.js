@@ -26,7 +26,7 @@ const BLOCKSIZE = 512;
 
 const ID3v2_3 = 3;
 const ID3v2_4 = 4;
-
+const ID3v2_default = ID3v2_4;
 // lengths / offsets (offsets are relative to tag start position)
 // tag
 const ID3TAG_LEN_HEADER = 10;
@@ -112,15 +112,6 @@ const ID3_FFLAG_VALID_FORMAT = 0b01001111;
  *  which cannot be repaired/used, but with a valid  framesize!(->offset next frame)
  */
 function Frame(arga){
-  var b,o,p;
-  if(arga[0] == 0){
-    b = arga[1];
-    o = arga[2];
-    p = arga[3];
-  }
-  if(arga[0] == 1){
-    return this.create(arga[1],arga[2],arga[3]);
-  }
   var FT2_4 = ["AENC", "APIC", "ASPI",  "COMM", "COMR",  "ENCR", "EQU2", "ETCO",  "GEOB", "GRID",  "LINK",  "MCDI", "MLLT",  "OWNE",  "PRIV", "PCNT", "POPM", "POSS",  "RBUF", "RVA2", "RVRB",  "SEEK", "SIGN", "SYLT", "SYTC",  "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDEN", "TDLY", "TDOR", "TDRC", "TDRL", "TDTG", "TENC", "TEXT", "TFLT", "TIPL", "TIT1", "TIT2", "TIT3", "TKEY", "TLAN", "TLEN", "TMCL", "TMED", "TMOO", "TOAL", "TOFN", "TOLY", "TOPE", "TOWN", "TPE1", "TPE2", "TPE3", "TPE4", "TPOS", "TPRO", "TPUB", "TRCK", "TRSN", "TRSO", "TSOA", "TSOP", "TSOT", "TSRC", "TSSE", "TSST", "TXXX",  "UFID", "USER", "USLT",  "WCOM", "WCOP", "WOAF", "WOAR", "WOAS", "WORS", "WPAY", "WPUB", "WXXX"]
   let FO = 0;
   const FO_ENC = FO++; // numeric (encoding [0-3])
@@ -159,7 +150,7 @@ function Frame(arga){
     [["W"],,[[1]],[[FO_T,"text"]]]
   ];
 
-  Frame.prototype.create = function(t,fd,p){
+  Frame.prototype.createFrame = function(t,fd,p){
     this.parent = p;
     this.type = -1;
     this.error = {iserror: 0};
@@ -183,7 +174,7 @@ function Frame(arga){
             }else{
               for(let i of ft[3])need.push(i[i.length-1]);
             }
-            return { iserror: 1, type: -1, msg: `insufficient arguments (${fd}). should be ${need}`};
+            return { iserror: 1, type: -1, msg: `insufficient arguments (${fd}). should be <${need}>`};
           }
           for(let i=0;i<ft[3].length;i++){  // commands
             let v;
@@ -394,6 +385,15 @@ function Frame(arga){
     }
   }
 
+  var b,o,p;
+  if(arga[0] == 0){
+    b = arga[1];
+    o = arga[2];
+    p = arga[3];
+  }
+  if(arga[0] == 1){
+    return this.createFrame(arga[1],arga[2],arga[3]);
+  }
 
 
   this.u = 0; // unsychronisation
@@ -818,6 +818,7 @@ function unsychroniseBuf(br){
 // mode == 3 : return multiple strings as array
 const ec = ["","utf16","utf16be","utf8"];
 function decodeBuf(b,o=0,e=0,mode=0){
+  if(e < 0 || e > 3)return "";
   var ra = [];  // mutliple, by 0 seperated values will be returned as array
   var br = Buffer.alloc(b.length-o);
   try{
@@ -946,7 +947,28 @@ function fixPicture(data){
 
 
 function ID3Tag(fb,options) { // fb = filebuffer
-
+  ID3Tag.prototype.create = function(filename,options){
+    if(options.version < 3){
+      console.warn("id3v2.2 is not supported");
+      return 0;
+    }
+    if(options.version > 4){
+      console.warn(`${version} is unknown`);
+      return 0;
+    }
+    this.options = options;
+    this.filename = filename;
+    this.version = {
+      major: options.version,
+      minor: 0
+    }
+    this.flags = options.flags;
+    this.etag = {};
+    this.frames = [];
+    this.buf = Buffer.alloc(0);
+    this.tagok = 1;
+    return this;
+  }
   ID3Tag.prototype.removeFrame = function(t,a){
     for(let fi in this.frames){
       if(this.frames[fi].type == t){ // equal type
@@ -1134,6 +1156,17 @@ function ID3Tag(fb,options) { // fb = filebuffer
   ID3Tag.prototype.listFrames = () => {cli(this.frames);}
 
 
+  // header + frames (data) = id3-tag
+  // header
+  this.version = {
+    major: 0,
+    minor: 0
+  }
+  this.flags = 0;
+  this.etag = {};
+  // the frames (data)
+  this.frames = [];
+  if(!fb)return this;
 
   console.log(fb);
   this.tagok = false;
@@ -1172,18 +1205,6 @@ function ID3Tag(fb,options) { // fb = filebuffer
       }
     }
   }
-  // header + frames (data) = id3-tag
-  // header
-  this.version = {
-    major: 0,
-    minor: 0
-  }
-  this.flags = 0;
-  this.etag = {};
-
-  // the frames (data)
-  this.frames = {};
-  this.friendlyframes = {};
 
   this.version.major = this.buf[ID3TAG_VERSION_MAJOR];
   this.version.minor = this.buf[ID3TAG_VERSION_MINOR];
@@ -1213,7 +1234,6 @@ function ID3Tag(fb,options) { // fb = filebuffer
 
 
   // filebuffer at frames position
-  this.frames = [];
   var errors = [];
   let i = 0;
   let last_frame_offset = 0;
@@ -1251,37 +1271,50 @@ function ID3Tag(fb,options) { // fb = filebuffer
 
 
 function NodeID3v2() {
-}
 
-
-NodeID3v2.prototype.read = function(filebuffer,options={}) {
-  // returns tag object or -1 on error
-
-  var tag = new ID3Tag(filebuffer, options);
-  if(!tag.tagok)return -1;
-  LOGGING?tag.log():null;
-  return tag;
-}
-
-NodeID3v2.prototype.addTagFromFile = function(f,options) {
-  let bf = fs.readFileSync(f);
-  if( (bf.readUInt16BE(0) & 0b1111111111000000) == 0b1111111111000000 ){
-    let tag = new ID3Tag(options.tagfile,options);
-    if(tag.tagok){
-      let bt = fs.readFileSync(options.tagfile);
-      bf = Buffer.concat([bt,bf]);
-      fs.writeFileSync(f,bf);
-      return 1;
+  NodeID3v2.prototype.createTag = function(f,options){
+    options.version = options.version || ID3v2_default;
+    options.flags = options.flags || 0;
+    let bf = fs.readFileSync(f);
+    if( (bf.readUInt16BE(0) & 0b1111111111000000) == 0b1111111111000000 ){
+      let tag = new ID3Tag();
+      tag.create(f,options);
+      if(tag)return tag;
     }
-    console.log(`ERROR: file '${t}' is not a valid tag`);
+    console.log(`ERROR: file '${f}' has no MPEG frame at file pos 0`);
     return 0;
   }
-  console.log(`ERROR: file '${f}' has no MPEG frame at file pos 0`);
-  return 0;
+
+  NodeID3v2.prototype.readTag = function(filebuffer,options={}) {
+    // returns tag object or -1 on error
+    if(!filebuffer)return;
+    var tag = new ID3Tag(filebuffer, options);
+    if(!tag.tagok)return -1;
+    LOGGING?tag.log():null;
+    return tag;
+  }
+
+  NodeID3v2.prototype.addTagFromFile = function(f,options) {
+    let bf = fs.readFileSync(f);
+    if( (bf.readUInt16BE(0) & 0b1111111111000000) == 0b1111111111000000 ){
+      let tag = new ID3Tag(options.tagfile,options);
+      if(tag.tagok){
+        let bt = fs.readFileSync(options.tagfile);
+        bf = Buffer.concat([bt,bf]);
+        fs.writeFileSync(f,bf);
+        return 1;
+      }
+      console.log(`ERROR: file '${t}' is not a valid tag`);
+      return 0;
+    }
+    console.log(`ERROR: file '${f}' has no MPEG frame at file pos 0`);
+    return 0;
+  }
 }
-
-function getMPEGFirstFrame(b){
-
+function getMPEGFirstFrameOffset(b){
+  let i = 0;
+  while(!( (bf.readUInt16BE(i) & 0b1111111111000000) == 0b1111111111000000 ) && i < b.length)i++;
+  return i;
 }
 
 function getID3TagStart(buffer) {

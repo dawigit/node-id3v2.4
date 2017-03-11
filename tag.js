@@ -23,38 +23,52 @@ options.opa = [];
 
 aaargh = {
     "-d": ["enable debug",["debug",1]],
-    "-1": ["read 1 file, then exit (used with option '-lp')",["testsingle",1]],
+    "-1": ["read 1 file, then exit (used with options '-lp'/'-c')",["testsingle",1]],
     "-l": ["list tag frames",["list",1]],
-    "-lp": ["-lp 'path' : read all files (recursive) from path (uses 'find')",["lp",1],["opa",["lpath"]]],
+    "-lp": ["-lp <'path'> : read all files (recursive) from path (uses 'find')",["lp",1]],
     "-log": ["log output",["log",1]],
     "-c": ["continue from last read file (uses with option '-lp')",["continue",1]],
     "-u": ["update/write tag in file",["update",1]],
-    "-xp": ["-xp ('path') : extract pictures from tag (to 'path')",["extractpictures",1],["opa",["pxpath"]]],
-    "-cp": ["-cp ('destination type') : convert pictures from tag (e.g. -cp 'png'), needs 'imagemagic'",["convertpictures",1],["opa",["pdest"]]],
+    "-xp": ["-xp [<'path'>] : extract pictures from tag (to 'path')",["extractpictures",1],["opa",["pxpath"]]],
+    "-cp": ["-cp [<'destination type'>] : convert pictures from tag (e.g. -cp 'png'), needs 'imagemagic'",["convertpictures",1],["opa",["pdest"]]],
     "-fp": ["try to fix pictures in tag",["fixpicture"],1],
     "-tv3": ["ID3 target version : ID3v2.3",["targetversion",3]],
     "-tv4": ["ID3 target version : ID3v2.4",["targetversion",4]],
-    "-bu": ["-bu ('tagfile') : backup tag (to 'tagfile'.hbin)",["backuptag",1],["opa",["butagfile"]]],
-    "-re": ["-re ('tagfile') : restore tag (from 'tagfile'.hbin)",["restoretag",1]],
+    "-bu": ["-bu [<'tagfile'>] : backup tag (to 'tagfile'.hbin)",["backuptag",1],["opa",["butagfile"]]],
+    "-re": ["-re [<'tagfile'>] : restore tag (from 'tagfile'.hbin)",["restoretag",1]],
     "-RT": ["completely remove ID3 tag", ["removetag",1]],
     "-neo": ["keep encoding of text in frames as it is (default)",["noencodingoverride",1]],
-    "-te": ["target encoding (0-3) ['ISO-8859-1','UTF-16','UTF-16BE','UTF-8'(default)]",["opa",["encoding"]]],
-    "-tag": ["add a tag from 'tagfile'", ["addtag",1],["opa",["tagfile"]]],
-    "-af": ["add a frame to tag (e.g. -af title,'some title')",["addframe",1],["opaa",1],["opa",["addframes"]]],
+    "-te": ["-te <(0|1|2|3)>: target encoding ['ISO-8859-1','UTF-16','UTF-16BE','UTF-8'(default)]",["opa",["encoding"]]],
+    "-tag": ["-tag <'tagfile'> : add a tag from 'tagfile'", ["addtag",1],["opa",["tagfile"]]],
+    "-ct": ["-ct [<version>,<flags>] : create a new tag", ["createtag",1],["opa",["version"]],["opa",["flags"]]],
+    "-af": ["-af <'framename',data<,data>...> : add a frame to tag (e.g. -af title,'some title')",["addframe",1],["opaa",1],["opa",["addframes"]]],
     "-RF": ["remove frame from tag (you have to use 'unfriendly' names e.g. 'TIT2')",["removeframe",1],["opaa",1],["opa",["removeframes"]]]
 };
 function help(){
+  usage();
   for(i of Object.keys(aaargh)){
     console.log(`${(" "+i+"     ").substring(0,6)}: ${aaargh[i][0]}`);
   }
+  console.log("Bug reports to: 'dawi@online.de'");
 }
+function usage(){
+  console.log("usage: tag.js < -switch [argument]|<argument> ... > ... 'mediafilename'")
+}
+if(process.argv.length == 2){
+  help();
+  return;
+}
+var error = 0;
 process.argv.forEach(function (e,i,a) {
-  if(a.length == 2)help();
-  if(i < 2)return;
+  if(i < 2 || error)return;
   if(aaargh[e]){
     options.opa = [];
     for(let i=1;i<aaargh[e].length;i++){
-      options[aaargh[e][i][0]]=aaargh[e][i][1];
+      if(aaargh[e][i][0] == "opa"){
+        options[aaargh[e][i][0]].push(aaargh[e][i][1]);
+      }else{
+        options[aaargh[e][i][0]]=aaargh[e][i][1];
+      }
     }
   }else{
     if(options.opa.length){
@@ -73,6 +87,7 @@ process.argv.forEach(function (e,i,a) {
       if(e == "-?" || e == "-h" || e == "--help" ){help();return;}
       if(e[0] == "-"){
         console.log(`aaargh! unknown argument: '${e}'`);
+        error = 1;
         return;
       }
       options.filename = e;
@@ -80,6 +95,7 @@ process.argv.forEach(function (e,i,a) {
   }
   return;
 });
+if(error)return;
 if(options.encoding && isNaN(options.encoding)){
   console.log("encoding: [0-3]");
   return;
@@ -91,7 +107,7 @@ if(options.encoding && isNaN(options.encoding)){
   }
 }
 if(options.lp){
-  exec(`find "${options.lpath}" -type f -iname "*.mp3"`,{maxBuffer: 1024 * 1024 * 256},  (error, stdout, stderr) => {
+  exec(`find "${options.filename}" -type f -iname "*.mp3"`,{maxBuffer: 1024 * 1024 * 256},  (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return;
@@ -122,13 +138,27 @@ if(options.filename){
 
 
 function test(filename){
-  if(!filename){return;}
+  if(!filename){
+    console.log("missing 'filename'");
+    usage();
+    return;
+  }
+  if(!fs.existsSync(filename)){
+    console.log(`given filename '${filename}' doesn't exist`);
+    usage();
+    return;
+  }
   status.lastfile=filename;
   fs.writeFileSync(`${ndir}.config.json`, JSON.stringify(status, null, 2));
   if(options.debug){debugger;}
   if(options.addtag)nodeID3v2.addTagFromFile(filename,options);
+  var tag;
+  if(options.createtag){
+      tag = nodeID3v2.createTag(filename,options);
+  }else{
+      tag = nodeID3v2.readTag(filename,options);
+  }
 
-  var tag = nodeID3v2.read(filename,options);
   if(tag == -1)return;
   if(options.backuptag)tag.backupTag(options.butagfile);
   if(options.extractpictures)tag.extractPictures(options.pxpath);

@@ -1,7 +1,11 @@
 ####node-id3v2.4
 
-##node id3 tagger
+###node id3 tagger
 
+##help:
+```
+    node tag.js [-?|-h|--help]
+```
 ##list tag with:
 ```
     node tag.js -l 'path/to/file.mp3'
@@ -18,7 +22,7 @@
 ```
     node tag.js -l -u -af TXXX,'my description','my text' 'path/to/file.mp3'
 ```
-##remove frame: (no 'friendly names' [title instead of TIT2] for remove) (yet)
+##remove frame: (no 'friendly names' [use 'TIT2' instead of 'title'] for remove) (yet)
 ```
     node tag.js -u -RF TIT2 'path/to/file.mp3'
 ```
@@ -34,3 +38,16 @@ so you have to:
 ```
   node tag.js -u -RF TXXX,'my description' 'path/to/file.mp3'
 ```
+
+## importat:
+
+This software has 'alpha' status - send bug reports!
+There are many media files in the wild with malformed tags or frames, which
+sometimes leads to unpredictable behaviour.
+
+## TODO:
+
+- support for all possible frame types
+- use 'template' approach for reading in data ( add Buffer.eat() )
+- clean code
+- improve stability with malformed tags/frames
