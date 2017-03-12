@@ -7,8 +7,11 @@
 
 
 ##help:
+  you can try to get help on 'topic' (and 'subtopic')
 ```
-    node-id3tag [-?|-h|--help]
+    node-id3tag [-?|-h]
+    node-id3tag -? picturetype
+    node-id3tag -h frametype image
 ```
 ##list tag with:
 ```
@@ -20,15 +23,15 @@
 ```
 ##add frame and list tag:
 ```
-    node-id3tag -l -af artist,'the artists name' 'path/to/file.mp3'
+    node-id3tag -l -af image,'path/to/image','picturetype' 'path/to/file.mp3'
 ```
 ##tag is not writen until you add '-u' argument:
 ```
     node-id3tag -l -u -af TXXX,'my description','my text' 'path/to/file.mp3'
 ```
-##remove frame: (no 'friendly names' [use 'TIT2' instead of 'title'] for remove) (yet)
+##remove frame:
 ```
-    node-id3tag -u -RF TIT2 'path/to/file.mp3'
+    node-id3tag -u -RF title 'path/to/file.mp3'
 ```
 ##remove ambiguous frame with:
 ```

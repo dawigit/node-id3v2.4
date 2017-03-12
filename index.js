@@ -101,6 +101,51 @@ const ID3_FFLAG_K = 8;  // 'compression'
 const ID3_FFLAG_H = 64; // 'grouping identity'
 const ID3_FFLAG_VALID_FORMAT = 0b01001111;
 
+function Error(e,t,m) {
+  this.iserror = e;
+  this.type = t;
+  this.msg = m;
+};
+
+var FT2_4 = ["AENC", "APIC", "ASPI",  "COMM", "COMR",  "ENCR", "EQU2", "ETCO",  "GEOB", "GRID",  "LINK",  "MCDI", "MLLT",  "OWNE",  "PRIV", "PCNT", "POPM", "POSS",  "RBUF", "RVA2", "RVRB",  "SEEK", "SIGN", "SYLT", "SYTC",  "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDEN", "TDLY", "TDOR", "TDRC", "TDRL", "TDTG", "TENC", "TEXT", "TFLT", "TIPL", "TIT1", "TIT2", "TIT3", "TKEY", "TLAN", "TLEN", "TMCL", "TMED", "TMOO", "TOAL", "TOFN", "TOLY", "TOPE", "TOWN", "TPE1", "TPE2", "TPE3", "TPE4", "TPOS", "TPRO", "TPUB", "TRCK", "TRSN", "TRSO", "TSOA", "TSOP", "TSOT", "TSRC", "TSSE", "TSST", "TXXX",  "UFID", "USER", "USLT",  "WCOM", "WCOP", "WOAF", "WOAR", "WOAS", "WORS", "WPAY", "WPUB", "WXXX"]
+let FO = 0;
+const FO_ENC = FO++; // numeric (encoding [0-3])
+const FO_TE = FO++; // string : text (with) encoding
+const FO_T = FO++; // string : text (encoding 0)
+const FO_NB = FO++; // numeric (byte)
+const FO_NW = FO++; // numeric (word) = (2bytes)
+const FO_NBMM = FO++; // numeric (byte), min, max (0x00 - 0xff)
+const FO_BP = FO++; // string containing path to binary
+const FO_L = FO++; // language code (3 characters)
+var FrameTeplateEmpty = [
+  ENC_DEF,"","",0,0,0,"","XXX"
+];
+var FrameTemplates = [
+  [["AENC"],,[],[[FO_NW,"previewstart"],[FO_NW,"previewlength"],[FO_BP,"bin"]]],
+  [["APIC","picture","image"],fixPicture,[[4,2],[4,2,3]],[[FO_ENC,"encoding"],[FO_T,"mime"],[FO_NBMM,0x00,0x14,"picturetype"],[FO_TE,"description"],[FO_BP,"picture"]]],
+  [["ASPI"]],
+  [["COMM","comment"],,[[2,3],[2,3,1]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"description"],[FO_TE,"text"]]],
+  [["COMR"]],
+  [["ENCR"],,[],[[FO_T,"owner"],[FO_NBMM,0x80,0xf0],[FO_BP,"bin"]]],
+  [["EQU2"]],
+  [["TPE1","artist"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TIT2","title"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TALB","album"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TCON","genre"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TRCK","track"],checkTracknumber,[],[[FO_T,"text"]]],
+  [["TPUB","label"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TDRL","date","year"],checkDate,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["TXXX","text"],,[[1,2]],[[FO_ENC,"encoding"],[FO_TE,"description"],[FO_TE,"text"]]],
+  [["WXXX"],,[[1,2]],[[FO_ENC,"encoding"],[FO_TE,"description"],[FO_T,"url"]]],
+  [["PRIV"],,[],[[FO_T,"url"],[FO_BP,"bin"]]],
+  [["USER"],,[[2]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"text"]]],
+  [["USLT"],,[[3],[2,3],[2,3,1]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"description"],[FO_TE,"ulyrics"]]],
+  [["UFID"],,[],[[FO_T,"owner"],[FO_BP,"id"]]],
+  [["T"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
+  [["W"],,[[1]],[[FO_T,"text"]]]
+];
+
+
 /**
  * Frame - Creates an 'ID3-Frame' by reading a buffer of id3 tag data
  *
@@ -112,43 +157,6 @@ const ID3_FFLAG_VALID_FORMAT = 0b01001111;
  *  which cannot be repaired/used, but with a valid  framesize!(->offset next frame)
  */
 function Frame(arga){
-  var FT2_4 = ["AENC", "APIC", "ASPI",  "COMM", "COMR",  "ENCR", "EQU2", "ETCO",  "GEOB", "GRID",  "LINK",  "MCDI", "MLLT",  "OWNE",  "PRIV", "PCNT", "POPM", "POSS",  "RBUF", "RVA2", "RVRB",  "SEEK", "SIGN", "SYLT", "SYTC",  "TALB", "TBPM", "TCOM", "TCON", "TCOP", "TDEN", "TDLY", "TDOR", "TDRC", "TDRL", "TDTG", "TENC", "TEXT", "TFLT", "TIPL", "TIT1", "TIT2", "TIT3", "TKEY", "TLAN", "TLEN", "TMCL", "TMED", "TMOO", "TOAL", "TOFN", "TOLY", "TOPE", "TOWN", "TPE1", "TPE2", "TPE3", "TPE4", "TPOS", "TPRO", "TPUB", "TRCK", "TRSN", "TRSO", "TSOA", "TSOP", "TSOT", "TSRC", "TSSE", "TSST", "TXXX",  "UFID", "USER", "USLT",  "WCOM", "WCOP", "WOAF", "WOAR", "WOAS", "WORS", "WPAY", "WPUB", "WXXX"]
-  let FO = 0;
-  const FO_ENC = FO++; // numeric (encoding [0-3])
-  const FO_TE = FO++; // string : text (with) encoding
-  const FO_T = FO++; // string : text (encoding 0)
-  const FO_NB = FO++; // numeric (byte)
-  const FO_NW = FO++; // numeric (word) = (2bytes)
-  const FO_NBMM = FO++; // numeric (byte), min, max (0x00 - 0xff)
-  const FO_BP = FO++; // string containing path to binary
-  const FO_L = FO++; // language code (3 characters)
-  var FrameTeplateEmpty = [
-    ENC_DEF,"","",0,0,0,"","XXX"
-  ];
-  var FrameTemplates = [
-    [["AENC"],,[],[[FO_NW,"previewstart"],[FO_NW,"previewlength"],[FO_BP,"bin"]]],
-    [["APIC","picture","image"],fixPicture,[[4,2],[4,2,3]],[[FO_ENC,"encoding"],[FO_T,"mime"],[FO_NBMM,0x00,0x14,"picturetype"],[FO_TE,"description"],[FO_BP,"picture"]]],
-    [["ASPI"]],
-    [["COMM","comment"],,[[2,3],[2,3,1]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"description"],[FO_TE,"text"]]],
-    [["COMR"]],
-    [["ENCR"],,[],[[FO_T,"owner"],[FO_NBMM,0x80,0xf0],[FO_BP,"bin"]]],
-    [["EQU2"]],
-    [["TPE1","artist"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TIT2","title"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TALB","album"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TCON","genre"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TRCK","track"],checkTracknumber,[],[[FO_T,"text"]]],
-    [["TPUB","label"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TDRL","date","year"],checkDate,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["TXXX","text"],,[[1,2]],[[FO_ENC,"encoding"],[FO_TE,"description"],[FO_TE,"text"]]],
-    [["WXXX"],,[[1,2]],[[FO_ENC,"encoding"],[FO_TE,"description"],[FO_T,"url"]]],
-    [["PRIV"],,[],[[FO_T,"url"],[FO_BP,"bin"]]],
-    [["USER"],,[[2]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"text"]]],
-    [["USLT"],,[[3],[2,3],[2,3,1]],[[FO_ENC,"encoding"],[FO_L,"language"],[FO_TE,"description"],[FO_TE,"ulyrics"]]],
-    [["UFID"],,[],[[FO_T,"owner"],[FO_BP,"id"]]],
-    [["T"],,[[1]],[[FO_ENC,"encoding"],[FO_TE,"text"]]],
-    [["W"],,[[1]],[[FO_T,"text"]]]
-  ];
 
   Frame.prototype.createFrame = function(t,fd,p){
     this.parent = p;
@@ -895,8 +903,8 @@ function checkDate(data){
 function fixPicture(data){
   var repair = [];
   var found = false;
-  for(let i=0;i<imagetypes.length;i++){
-    let it = imagetypes[i];
+  for(let i=0;i<imagetypeshex.length;i++){
+    let it = imagetypeshex[i];
     let bp = data.picture.bindexOf(it[2],0,8);
     if(bp >= 0){ // compare with magic number (0 == position 0 == found)
       pic = data.picture.slice(bp);
@@ -970,6 +978,14 @@ function ID3Tag(fb,options) { // fb = filebuffer
     return this;
   }
   ID3Tag.prototype.removeFrame = function(t,a){
+    for(let f of FrameTemplates){
+      for(let i=1;i<f[0].length;i++){
+        if(f[0][i] == t){
+          t = f[0][0];
+          break;
+        }
+      }
+    }
     for(let fi in this.frames){
       if(this.frames[fi].type == t){ // equal type
           for(let ftnd of frametypesnodupe){  // check frame type nodupe list
@@ -1272,24 +1288,26 @@ function ID3Tag(fb,options) { // fb = filebuffer
 
 function NodeID3v2() {
 
-  NodeID3v2.prototype.createTag = function(f,options){
+  NodeID3v2.prototype.createTag = function(filename,options){
+    let tag = new ID3Tag(filename, options);
+    if(tag.tagok)return new Error(1,-1,`tag already exists in file ${filename}`);
     options.version = options.version || ID3v2_default;
     options.flags = options.flags || 0;
-    let bf = fs.readFileSync(f);
+    let bf = fs.readFileSync(filename);
     if( (bf.readUInt16BE(0) & 0b1111111111000000) == 0b1111111111000000 ){
       let tag = new ID3Tag();
-      tag.create(f,options);
+      tag.create(filename,options);
       if(tag)return tag;
     }
-    console.log(`ERROR: file '${f}' has no MPEG frame at file pos 0`);
+    console.log(`ERROR: file '${filename}' has no MPEG frame at file pos 0`);
     return 0;
   }
 
-  NodeID3v2.prototype.readTag = function(filebuffer,options={}) {
+  NodeID3v2.prototype.readTag = function(filename,options={}) {
     // returns tag object or -1 on error
-    if(!filebuffer)return;
-    var tag = new ID3Tag(filebuffer, options);
-    if(!tag.tagok)return -1;
+    if(!filename)return;
+    var tag = new ID3Tag(filename, options);
+    if(!tag.tagok)return new Error(1,-1,`could not read tag from file ${filename}`);
     LOGGING?tag.log():null;
     return tag;
   }
@@ -1309,6 +1327,29 @@ function NodeID3v2() {
     }
     console.log(`ERROR: file '${f}' has no MPEG frame at file pos 0`);
     return 0;
+  }
+
+  NodeID3v2.prototype.getAPICTypes = function(){return apictypes;}
+  //[["APIC","picture","image"],fixPicture,[[4,2],[4,2,3]],[[FO_ENC,"encoding"],[FO_T,"mime"],[FO_NBMM,0x00,0x14,"picturetype"],[FO_TE,"description"],[FO_BP,"picture"]]],
+
+  NodeID3v2.prototype.getFrameTemplate = function(name){
+    let a = [],a1 = [],a2 = [],a3 = [], ai=0;
+    var ft = FrameTemplates;
+    for(let ri=0;ri<ft.length;ri++){
+      if(ft[ri][0].includes(name)){
+        a.push(ft[ri][0]);
+        if(ft[ri][2]){
+          for(let ti=0;ti<ft[ri][2].length;ti++){
+            let a1 = [];
+            for(let e=0;e<ft[ri][2][ti].length;e++){a1.push(ft[ri][3][ft[ri][2][ti][e]][ft[ri][3][ft[ri][2][ti][e]].length-1]);}
+            a.push(a1);
+          }
+        }
+        let a1 = [];
+        if(ft[ri][3]){for(let e=0;e<ft[ri][3].length;e++){a1.push(ft[ri][3][e][ft[ri][3][e].length-1]);}a.push(a1);}
+        return a;
+      }
+    }
   }
 }
 function getMPEGFirstFrameOffset(b){
@@ -1550,7 +1591,7 @@ var frametypesnodupe = [
   [["APIC"],["picturetype"]]
 ]
 
-var imagetypes = [
+var imagetypeshex = [
   [["jpeg","jpg"],"JPEG : JFIF", "ffd8ffe0","4a4649460001",-2,2],
   [["png"],"PNG", "89504e470d0a1a0a"],
   [["jpeg","jpg"],"JPEG : Exif", "ffd8ffe1","457869660000",-2,2],

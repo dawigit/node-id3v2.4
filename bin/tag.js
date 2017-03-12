@@ -1,5 +1,6 @@
 #! /usr/bin/env node
-const nodeID3v2 = require('node-id3v2.4');
+//const nodeID3v2 = require('node-id3v2.4');
+const nodeID3v2 = require('../index.js');
 const os = require('os');
 const fs = require('fs-extra');
 const exec = require('child_process').exec;
@@ -42,8 +43,15 @@ aaargh = {
     "-tag": ["-tag <'tagfile'> : add a tag from 'tagfile'", ["addtag",1],["opa",["tagfile"]]],
     "-ct": ["-ct [<version>,<flags>] : create a new tag", ["createtag",1],["opa",["version"]],["opa",["flags"]]],
     "-af": ["-af <'framename',data<,data>...> : add a frame to tag (e.g. -af title,'some title')",["addframe",1],["opaa",1],["opa",["addframes"]]],
-    "-RF": ["remove frame from tag (you have to use 'unfriendly' names e.g. 'TIT2')",["removeframe",1],["opaa",1],["opa",["removeframes"]]]
+    "-RF": ["-RF <'framename'> : remove frame from tag",["removeframe",1],["opaa",1],["opa",["removeframes"]]],
+    "-?": [["-? [<'topic'>,<'subtopic'>] : get help (on topic)"],["help",1],["opa",["helptopic","subtopic"]]],
+    "-h": [["-h [<'topic'>,<'subtopic'>] : get help (on topic)"],["help",1],["opa",["helptopic","subtopic"]]]
 };
+helptopics = {
+  picturetype: [1,"getAPICTypes"],
+  frametype: [2,"getFrameTemplate",options[""]]
+}
+
 function help(){
   usage();
   for(i of Object.keys(aaargh)){
@@ -64,15 +72,17 @@ process.argv.forEach(function (e,i,a) {
   if(aaargh[e]){
     options.opa = [];
     for(let i=1;i<aaargh[e].length;i++){
-      if(aaargh[e][i][0] == "opa"){
-        options[aaargh[e][i][0]].push(aaargh[e][i][1]);
+      options[aaargh[e][i][0]]=aaargh[e][i][1];
+      /*if(aaargh[e][i][0] == "opa"){
+        options[aaargh[e][i][0]]=aaargh[e][i][1];
+        //options[aaargh[e][i][0]].push(aaargh[e][i][1]);
       }else{
         options[aaargh[e][i][0]]=aaargh[e][i][1];
-      }
+      }*/
     }
   }else{
     if(options.opa.length){
-      if(i == a.length-1){
+      if(i == a.length-1 && !options.help){
         options.filename = e;
         e = "";
       }
@@ -84,7 +94,7 @@ process.argv.forEach(function (e,i,a) {
         options[options.opa.shift()] = e;
       }
     }else{
-      if(e == "-?" || e == "-h" || e == "--help" ){help();return;}
+      //if(e == "-?" || e == "-h" || e == "--help" ){help();return;}
       if(e[0] == "-"){
         console.log(`aaargh! unknown argument: '${e}'`);
         error = 1;
@@ -96,6 +106,20 @@ process.argv.forEach(function (e,i,a) {
   return;
 });
 if(error)return;
+if(options.help){
+  if(helptopics[options.helptopic]){
+    if(helptopics[options.helptopic][0] == 0)console.log(helptopics[options.helptopic][1]);
+    if(helptopics[options.helptopic][0] == 1)console.log(nodeID3v2[helptopics[options.helptopic][1]]());
+    if(helptopics[options.helptopic][0] == 2){
+      let a = nodeID3v2[helptopics[options.helptopic][1]](options.subtopic);
+      if(!a)return;
+      console.log(os.EOL);
+      for(let i of a)console.log(i);
+    }
+  }else{
+    help();
+  }
+}
 if(options.encoding && isNaN(options.encoding)){
   console.log("encoding: [0-3]");
   return;
@@ -159,7 +183,7 @@ function test(filename){
       tag = nodeID3v2.readTag(filename,options);
   }
 
-  if(tag == -1)return;
+  if(tag.iserror)return;
   if(options.backuptag)tag.backupTag(options.butagfile);
   if(options.extractpictures)tag.extractPictures(options.pxpath);
   if(options.convertpictures)tag.convertPictures(options.pdest);
