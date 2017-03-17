@@ -1,6 +1,6 @@
 {
   "name": "node-id3v2.4",
-  "version": "0.0.2",
+  "version": "0.0.2b",
   "description": "id3v2.4 tagger",
   "main": "index.js",
   "dependencies": {
@@ -21,9 +21,15 @@
   "keywords": [
     "id3",
     "id3v2",
+    "id3v2.3",
     "id3v2.4",
     "tag",
-    "mp3"
+    "mp3",
+    "tagger",
+    "node",
+    "node.js",
+    "write",
+    "read"
   ],
   "author": "Daniel Wienzek <dawi@online.de>",
   "license": "MIT",

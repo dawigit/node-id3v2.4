@@ -5,35 +5,51 @@
 - use/convert encodings 'ISO-8859-1','UTF-16',(ID3v2.4)'UTF-16BE','UTF-8'
 - add, convert (imagemagic) and extract images ('APIC')
 
+###Installation
+```
+  npm install node-id3v2.4
+```
+##Include
+To use the library:
+```
+  const nodeID3v2 = require('node-id3v2.4');
+```
+To read a tag:
+```
+  let tag = nodeID3v2.readTag(filename);
+```
 
-##help:
+###node-id3tag
+After installation 'node-id3tag' command will also be available for use in shell/cmd.
+
+##Help:
   you can try to get help on 'topic' (and 'subtopic')
 ```
     node-id3tag [-?|-h]
     node-id3tag -? picturetype
     node-id3tag -h frametype image
 ```
-##list tag with:
+##List tag with:
 ```
     node-id3tag -l 'path/to/file.mp3'
 ```
-##add frame:
+##Add frame:
 ```
     node-id3tag -af artist,'the artists name' 'path/to/file.mp3'
 ```
-##add frame and list tag:
+##Add frame and list tag:
 ```
     node-id3tag -l -af image,'path/to/image','picturetype' 'path/to/file.mp3'
 ```
-##tag is not writen until you add '-u' argument:
+##Tag is not writen until you add '-u' argument:
 ```
     node-id3tag -l -u -af TXXX,'my description','my text' 'path/to/file.mp3'
 ```
-##remove frame:
+##Remove frame:
 ```
     node-id3tag -u -RF title 'path/to/file.mp3'
 ```
-##remove ambiguous frame with:
+##Remove ambiguous frame with:
 ```
     node-id3tag -u -RF TXXX 'path/to/file.mp3'
 ```
@@ -46,9 +62,8 @@ so you have to:
   node-id3tag -u -RF TXXX,'my description' 'path/to/file.mp3'
 ```
 
-## notes:
+##Notes:
 
-This software has 'alpha' status - send bug reports!
 There are many media files in the wild with malformed tags or frames, which
 sometimes leads to unpredictable behaviour.
 
