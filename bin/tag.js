@@ -7,7 +7,8 @@ const exec = require('child_process').exec;
 const execSync = require('child_process').execSync;
 const util = require('util');
 const home = (process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE);
-const ndir = `${home}/.nodeID3v2/`;
+var path = require('path');
+const ndir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'] + path.normalize('/.nodeID3v2/');
 if(!fs.existsSync(ndir))fs.mkdirSync(ndir);
 const status = fs.existsSync(`${ndir}.config.json`)?JSON.parse(fs.readFileSync(`${ndir}.config.json`, 'utf-8')):{};
 
